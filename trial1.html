@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D SKP Viewer</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #upload-area {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 18px;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div id="upload-area">Drag & Drop a 3D (.glTF) file here or click to upload</div>
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.module.js';
+        import { GLTFLoader } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/loaders/GLTFLoader.js';
+        import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.158.0/examples/jsm/controls/OrbitControls.js';
+
+        const uploadArea = document.getElementById('upload-area');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer();
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+
+        camera.position.set(0, 1, 5);
+        controls.update();
+
+        const light = new THREE.DirectionalLight(0xffffff, 1);
+        light.position.set(5, 10, 7.5);
+        scene.add(light);
+
+        const loader = new GLTFLoader();
+
+        function handleFile(file) {
+            if (file.type !== 'model/gltf+json') {
+                alert('Only .glTF files are supported.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const contents = event.target.result;
+                const blob = new Blob([contents], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                loader.load(url, (gltf) => {
+                    scene.clear(); // Clear previous models
+                    scene.add(gltf.scene);
+                });
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        uploadArea.addEventListener('dragover', (event) => {
+            event.preventDefault(); // Prevent default browser behavior
+            uploadArea.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+        });
+
+        uploadArea.addEventListener('dragleave', (event) => {
+            event.preventDefault();
+            uploadArea.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        });
+
+        uploadArea.addEventListener('drop', (event) => {
+            event.preventDefault(); // Prevent default browser behavior
+            uploadArea.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+            uploadArea.style.display = 'none';
+
+            const file = event.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        uploadArea.addEventListener('click', () => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.gltf';
+            input.onchange = (event) => {
+                const file = event.target.files[0];
+                handleFile(file);
+                uploadArea.style.display = 'none';
+            };
+            input.click();
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
