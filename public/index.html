@@ -48,7 +48,7 @@
             formData.append('file', file);
 
             try {
-                const response = await fetch('http://localhost:5000/uploads', { // Replace with your server endpoint
+                const response = await fetch('http://localhost:5000/upload', { // Replace with your server endpoint
                     method: 'POST',
                     body: formData,
                 });
